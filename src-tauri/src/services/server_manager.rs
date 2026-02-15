@@ -255,61 +255,86 @@ impl ServerManager {
             let _ = std::fs::write(&eula, "# Auto-accepted by Sea Lantern\neula=true\n");
         }
 
-        //预处理脚本
-        // windows系统中：检查服务器目录下是否有 preload.bat 文件
+        // 预处理脚本：在服务器启动前执行自定义脚本
         #[cfg(target_os = "windows")]
         {
-            let preload_bat_path = std::path::Path::new(&server.path).join("preload.bat");
-            if preload_bat_path.exists() {
-                println!("发现预加载脚本: {:?}", preload_bat_path);
+            let preload_script = std::path::Path::new(&server.path).join("preload.bat");
+            if preload_script.exists() {
+                println!("发现预加载脚本: {:?}", preload_script);
+                self.append_log(id, "[preload] 开始执行预加载脚本...");
 
-                // Windows 下执行 bat 文件
-                let bat_result = std::process::Command::new("cmd")
-                    .args(&["/c", preload_bat_path.to_str().unwrap_or("preload.bat")])
-                    .current_dir(&server.path)
-                    .output()
-                    .map_err(|e| format!("执行 preload.bat 失败: {}", e))?;
+                // Windows 下执行 bat 文件，使用 CREATE_NO_WINDOW 避免弹窗
+                let mut cmd = std::process::Command::new("cmd");
+                cmd.args(&["/c", preload_script.to_str().unwrap_or("preload.bat")])
+                    .current_dir(&server.path);
 
-                if bat_result.status.success() {
-                    println!("preload.bat 执行成功");
-                    if !bat_result.stdout.is_empty() {
-                        let output = String::from_utf8_lossy(&bat_result.stdout);
-                        println!("preload.bat 输出: {}", output);
-                        self.append_log(id, &format!("[preload] {}", output));
+                // 隐藏命令行窗口
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x08000000;
+                cmd.creation_flags(CREATE_NO_WINDOW);
+
+                match cmd.output() {
+                    Ok(result) => {
+                        if result.status.success() {
+                            println!("preload.bat 执行成功");
+                            if !result.stdout.is_empty() {
+                                let output = String::from_utf8_lossy(&result.stdout);
+                                for line in output.lines() {
+                                    self.append_log(id, &format!("[preload] {}", line));
+                                }
+                            }
+                            self.append_log(id, "[preload] 预加载脚本执行成功");
+                        } else {
+                            let error = String::from_utf8_lossy(&result.stderr);
+                            println!("preload.bat 执行失败: {}", error);
+                            self.append_log(id, &format!("[preload] 执行失败: {}", error));
+                        }
                     }
-                } else {
-                    let error = String::from_utf8_lossy(&bat_result.stderr);
-                    let error_msg = format!("preload.bat 执行失败: {}", error);
-                    println!("{}", error_msg);
-                    self.append_log(id, &error_msg);
+                    Err(e) => {
+                        let error_msg = format!("执行 preload.bat 失败: {}", e);
+                        println!("{}", error_msg);
+                        self.append_log(id, &format!("[preload] {}", error_msg));
+                    }
                 }
-            } else {
-                println!("未找到预加载脚本: {:?}", preload_bat_path);
             }
         }
 
-        // 非Windows系统中：检查服务器目录下是否有 preload.sh 文件
+        // 非 Windows 系统：检查服务器目录下是否有 preload.sh 文件
         #[cfg(not(target_os = "windows"))]
         {
-            let preload_bat_path = std::path::Path::new(&server.path).join("preload.sh");
-            if preload_bat_path.exists() {
+            let preload_script = std::path::Path::new(&server.path).join("preload.sh");
+            if preload_script.exists() {
+                println!("发现预加载脚本: {:?}", preload_script);
+                self.append_log(id, "[preload] 开始执行预加载脚本...");
 
                 // 非 Windows 系统下，作为 shell 脚本执行
-                println!("非 Windows 系统，作为 shell 脚本执行");
-                let bat_result = std::process::Command::new("sh")
-                    .arg(preload_bat_path)
+                match std::process::Command::new("sh")
+                    .arg(&preload_script)
                     .current_dir(&server.path)
                     .output()
-                    .map_err(|e| format!("执行 preload script 失败: {}", e))?;
-                if bat_result.status.success() {
-                    println!("preload script 执行成功");
-                } else {
-                    let error = String::from_utf8_lossy(&bat_result.stderr);
-                    println!("preload script 执行失败: {}", error);
-                    self.append_log(id, &format!("[preload] 执行失败: {}", error));
+                {
+                    Ok(result) => {
+                        if result.status.success() {
+                            println!("preload.sh 执行成功");
+                            if !result.stdout.is_empty() {
+                                let output = String::from_utf8_lossy(&result.stdout);
+                                for line in output.lines() {
+                                    self.append_log(id, &format!("[preload] {}", line));
+                                }
+                            }
+                            self.append_log(id, "[preload] 预加载脚本执行成功");
+                        } else {
+                            let error = String::from_utf8_lossy(&result.stderr);
+                            println!("preload.sh 执行失败: {}", error);
+                            self.append_log(id, &format!("[preload] 执行失败: {}", error));
+                        }
+                    }
+                    Err(e) => {
+                        let error_msg = format!("执行 preload.sh 失败: {}", e);
+                        println!("{}", error_msg);
+                        self.append_log(id, &format!("[preload] {}", error_msg));
+                    }
                 }
-            } else {
-                println!("未找到预加载脚本: {:?}", preload_bat_path);
             }
         }
 
