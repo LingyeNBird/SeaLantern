@@ -402,7 +402,7 @@ impl ServerManager {
 
                     let mut bat_cmd = Command::new("cmd");
                     let launch_command = format!(
-                        "chcp 65001>nul & set \"JAVA_HOME={}\" & set \"PATH={};%PATH%\" & call \"{}\"",
+                        "chcp 65001>nul & set \"JAVA_HOME={}\" & set \"PATH={};%PATH%\" & call \"{}\" nogui",
                         java_home_dir_str.replace('"', "\"\""),
                         java_bin_dir_str.replace('"', "\"\""),
                         startup_filename.replace('"', "\"\"")
@@ -421,6 +421,7 @@ impl ServerManager {
                 self.write_user_jvm_args(&server, &settings)?;
                 let mut sh_cmd = Command::new("sh");
                 sh_cmd.arg(&startup_filename);
+                sh_cmd.arg("nogui");
                 sh_cmd.env("JAVA_HOME", &java_home_dir_str);
                 let existing_path = std::env::var("PATH").unwrap_or_default();
                 let path_value = if existing_path.is_empty() {
