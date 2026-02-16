@@ -103,7 +103,7 @@ export const contributors: Contributor[] = [
     avatar: "https://minotar.net/helm/f04be4dcd0ca49af89faf61068ec34e2/64",
     url: "https://github.com/maobuben",
   },
-    {
+  {
     name: "橙子冰棒",
     role: "修复Java查找算法",
     avatar: "https://blog.orllow.cn/images/author.webp",
@@ -121,6 +121,12 @@ export const contributors: Contributor[] = [
     avatar: "https://minotar.net/avatar/_TNTXZ_/64",
     url: "https://github.com/TNTXZ",
   },
+  {
+    name: "I账户已注销I",
+    role: "提出了个性化页面，提供了颜色编辑和颜色选择器",
+    avatar: "https://zhuxiaojt.github.io/favicon.ico",
+    url: "https://github.com/zhuxiaojt",
+  }
   // ============================================
   // 在这里添加更多贡献者！
   // ============================================

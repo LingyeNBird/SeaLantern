@@ -661,9 +661,7 @@ function handleAnimationEnd(event: AnimationEvent) {
             :class="['delete-confirm-input', { closing: isClosing }]"
             @animationend="handleAnimationEnd"
           >
-            <p class="delete-confirm-message">
-              {{ i18n.t("home.delete_confirm_message", { server: server.name }) }}
-            </p>
+            <p class="delete-confirm-message" v-html="i18n.t('home.delete_confirm_message', { server: server.name })"></p>
             <div class="delete-input-group">
               <input
                 type="text"
@@ -677,8 +675,12 @@ function handleAnimationEnd(event: AnimationEvent) {
               <div v-if="deleteError" class="delete-error">{{ deleteError }}</div>
             </div>
             <div class="delete-actions">
-              <SLButton variant="ghost" size="sm" @click="cancelDelete">{{ i18n.t('home.delete_cancel') }}</SLButton>
-              <SLButton variant="danger" size="sm" @click="confirmDelete">{{ i18n.t('home.delete_confirm') }}</SLButton>
+              <SLButton variant="ghost" size="sm" @click="cancelDelete">{{
+                i18n.t("home.delete_cancel")
+              }}</SLButton>
+              <SLButton variant="danger" size="sm" @click="confirmDelete">{{
+                i18n.t("home.delete_confirm")
+              }}</SLButton>
             </div>
           </div>
         </div>
