@@ -84,7 +84,7 @@ pub fn start_server(id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub fn stop_server(id: String) -> Result<(), String> {
-    manager().stop_server(&id)
+    manager().request_stop_server(&id)
 }
 
 #[tauri::command]

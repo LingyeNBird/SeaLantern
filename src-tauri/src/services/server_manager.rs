@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -11,6 +11,7 @@ const DATA_FILE: &str = "sea_lantern_servers.json";
 pub struct ServerManager {
     pub servers: Mutex<Vec<ServerInstance>>,
     pub processes: Mutex<HashMap<String, Child>>,
+    pub stopping_servers: Mutex<HashSet<String>>,
     pub logs: Mutex<HashMap<String, Vec<String>>>,
     pub data_dir: Mutex<String>,
 }
@@ -26,9 +27,47 @@ impl ServerManager {
         ServerManager {
             servers: Mutex::new(servers),
             processes: Mutex::new(HashMap::new()),
+            stopping_servers: Mutex::new(HashSet::new()),
             logs: Mutex::new(logs_map),
             data_dir: Mutex::new(data_dir),
         }
+    }
+
+    fn is_stopping(&self, id: &str) -> bool {
+        self.stopping_servers
+            .lock()
+            .map(|stopping| stopping.contains(id))
+            .unwrap_or(false)
+    }
+
+    fn mark_stopping(&self, id: &str) {
+        if let Ok(mut stopping) = self.stopping_servers.lock() {
+            stopping.insert(id.to_string());
+        }
+    }
+
+    fn clear_stopping(&self, id: &str) {
+        if let Ok(mut stopping) = self.stopping_servers.lock() {
+            stopping.remove(id);
+        }
+    }
+
+    pub fn request_stop_server(&self, id: &str) -> Result<(), String> {
+        if self.is_stopping(id) {
+            return Ok(());
+        }
+
+        self.mark_stopping(id);
+        let sid = id.to_string();
+        std::thread::spawn(move || {
+            let manager = super::global::server_manager();
+            if let Err(err) = manager.stop_server(&sid) {
+                manager.append_log(&sid, &format!("[Sea Lantern] 停止失败: {}", err));
+                manager.clear_stopping(&sid);
+            }
+        });
+
+        Ok(())
     }
 
     fn save(&self) {
@@ -544,6 +583,7 @@ impl ServerManager {
         };
 
         if !is_running {
+            self.clear_stopping(id);
             self.append_log(id, "[Sea Lantern] 服务器未运行");
             return Ok(());
         }
@@ -560,16 +600,19 @@ impl ServerManager {
                 match child.try_wait() {
                     Ok(Some(_)) => {
                         procs.remove(id);
+                        self.clear_stopping(id);
                         self.append_log(id, "[Sea Lantern] 服务器已正常停止");
                         return Ok(());
                     }
                     Ok(None) => {} // Still running
                     Err(_) => {
                         procs.remove(id);
+                        self.clear_stopping(id);
                         return Ok(());
                     }
                 }
             } else {
+                self.clear_stopping(id);
                 self.append_log(id, "[Sea Lantern] 服务器已停止");
                 return Ok(());
             }
@@ -582,6 +625,7 @@ impl ServerManager {
             let _ = child.wait();
             self.append_log(id, "[Sea Lantern] 服务器超时，已强制终止");
         }
+        self.clear_stopping(id);
         Ok(())
     }
 
@@ -699,7 +743,9 @@ impl ServerManager {
         };
         ServerStatusInfo {
             id: id.to_string(),
-            status: if is_running {
+            status: if self.is_stopping(id) {
+                ServerStatus::Stopping
+            } else if is_running {
                 ServerStatus::Running
             } else {
                 ServerStatus::Stopped
