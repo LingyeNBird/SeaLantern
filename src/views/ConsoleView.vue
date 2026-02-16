@@ -531,7 +531,11 @@ function executeCustomCommand(cmd: ServerCommand) {
               <span class="custom-btn-name">{{ cmd.name }}</span>
               <span class="custom-btn-edit" @click.stop="openEditCommandModal(cmd)"> ⚙️ </span>
             </div>
-            <div class="custom-btn add-btn" @click="openAddCommandModal()" :title="i18n.t('console.add_custom_command')">
+            <div
+              class="custom-btn add-btn"
+              @click="openAddCommandModal()"
+              :title="i18n.t('console.add_custom_command')"
+            >
               <span class="add-btn-plus">+</span>
             </div>
           </div>
@@ -573,7 +577,9 @@ function executeCustomCommand(cmd: ServerCommand) {
             {{ line }}
           </template>
         </div>
-        <div v-if="currentLogs.length === 0" class="log-empty">{{ i18n.t("console.waiting_for_output") }}</div>
+        <div v-if="currentLogs.length === 0" class="log-empty">
+          {{ i18n.t("console.waiting_for_output") }}
+        </div>
       </div>
 
       <div
