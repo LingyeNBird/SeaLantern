@@ -14,7 +14,7 @@ const props = defineProps<Props>();
 const pluginStore = usePluginStore();
 
 const isOpen = ref(false);
-const panelPosition = ref({ top: 0, left: 0 });
+const panelPosition = ref({ top: 0, left: 0, maxHeight: 400 });
 
 function getPermissionLabel(permission: string): string {
   const meta = getPermissionMetadata(permission);
@@ -59,31 +59,52 @@ function formatTime(timestamp: number): string {
 }
 
 function updatePanelPosition() {
-  if (!buttonRef.value) return;
+  if (!buttonRef.value) {
+    console.warn('Button ref not found');
+    return;
+  }
+  
   const rect = buttonRef.value.getBoundingClientRect();
   const panelWidth = 320;
   const panelHeight = 400;
+  const minHeight = 200;
   const padding = 8;
 
-  let top = rect.bottom + 4;
-  let left = rect.left;
+  // 计算可用空间
+  const spaceBelow = window.innerHeight - rect.bottom - padding;
+  const spaceAbove = rect.top - padding;
+  const spaceRight = window.innerWidth - rect.right - padding;
 
-  // 确保面板不超出视口底部
-  if (top + panelHeight > window.innerHeight - padding) {
+  // 确定面板位置
+  let top: number;
+  let left: number;
+  let actualMaxHeight = panelHeight;
+
+  // 优先在下方显示
+  if (spaceBelow >= panelHeight) {
+    top = rect.bottom + 4;
+  } else if (spaceAbove >= panelHeight) {
     top = rect.top - panelHeight - 4;
+  } else {
+    // 空间不足，选择空间较大的方向并调整高度
+    if (spaceBelow >= spaceAbove) {
+      top = rect.bottom + 4;
+      actualMaxHeight = Math.max(minHeight, spaceBelow - 4);
+    } else {
+      top = padding;
+      actualMaxHeight = Math.max(minHeight, spaceAbove - 4);
+    }
   }
 
-  // 确保面板不超出视口右侧
-  if (left + panelWidth > window.innerWidth - padding) {
-    left = window.innerWidth - panelWidth - padding;
+  // 优先在右侧显示（如果空间足够）
+  if (spaceRight >= panelWidth) {
+    left = rect.right + 4;
+  } else {
+    // 右侧空间不足，显示在左侧
+    left = Math.max(padding, rect.left - panelWidth - 4);
   }
 
-  // 确保面板不超出视口左侧
-  if (left < padding) {
-    left = padding;
-  }
-
-  panelPosition.value = { top, left };
+  panelPosition.value = { top, left, maxHeight: actualMaxHeight };
 }
 
 async function togglePanel() {
@@ -151,7 +172,11 @@ onUnmounted(() => {
         v-if="isOpen"
         ref="panelRef"
         class="permission-panel glass"
-        :style="{ top: `${panelPosition.top}px`, left: `${panelPosition.left}px` }"
+        :style="{
+          top: `${panelPosition.top}px`,
+          left: `${panelPosition.left}px`,
+          maxHeight: `${panelPosition.maxHeight}px`,
+        }"
       >
         <div class="panel-header">
           <span class="panel-title">{{ i18n.t("plugins.permission.panel_title") }}</span>
@@ -234,7 +259,7 @@ onUnmounted(() => {
   border-radius: var(--sl-radius-xs);
   background: var(--sl-bg-tertiary);
   color: var(--sl-text-secondary);
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   cursor: pointer;
   transition: all var(--sl-transition-fast);
 }
@@ -258,14 +283,17 @@ onUnmounted(() => {
   width: 320px;
   max-height: 400px;
   border-radius: var(--sl-radius-lg);
-  background: var(--sl-surface);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--sl-border);
+  border: 1px solid var(--sl-glass-border, rgba(255, 255, 255, 0.5));
   box-shadow: var(--sl-shadow-lg);
   z-index: 9999;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(var(--sl-blur-lg, 20px)) saturate(var(--sl-saturate-normal, 180%));
+  -webkit-backdrop-filter: blur(var(--sl-blur-lg, 20px)) saturate(var(--sl-saturate-normal, 180%));
+  will-change: backdrop-filter;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .panel-header {
@@ -278,7 +306,7 @@ onUnmounted(() => {
 }
 
 .panel-title {
-  font-size: 14px;
+  font-size: var(--sl-font-size-base);
   font-weight: 600;
   color: var(--sl-text-primary);
 }
@@ -317,7 +345,7 @@ onUnmounted(() => {
 }
 
 .section-title {
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   font-weight: 600;
   color: var(--sl-text-secondary);
   margin-bottom: 8px;
@@ -339,7 +367,7 @@ onUnmounted(() => {
   border-radius: var(--sl-radius-lg);
   background: var(--sl-primary-alpha, rgba(59, 130, 246, 0.15));
   color: var(--sl-primary);
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   font-weight: 500;
   cursor: default;
 }
@@ -352,7 +380,7 @@ onUnmounted(() => {
   background: var(--sl-bg-tertiary);
   border: 1px solid var(--sl-border);
   color: var(--sl-text-secondary);
-  font-size: 11px;
+  font-size: var(--sl-font-size-xs);
   font-weight: 400;
   line-height: 1.5;
   padding: 6px 10px;
@@ -391,7 +419,7 @@ onUnmounted(() => {
 
 .command-action {
   flex: 1;
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   color: var(--sl-text-primary);
   font-family: monospace;
   overflow: hidden;
@@ -401,7 +429,7 @@ onUnmounted(() => {
 }
 
 .command-time {
-  font-size: 11px;
+  font-size: var(--sl-font-size-xs);
   color: var(--sl-text-tertiary);
   flex-shrink: 0;
 }
@@ -426,19 +454,19 @@ onUnmounted(() => {
 }
 
 .api-name {
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   color: var(--sl-text-primary);
   font-family: monospace;
 }
 
 .api-count {
-  font-size: 11px;
+  font-size: var(--sl-font-size-xs);
   color: var(--sl-text-secondary);
   font-weight: 500;
 }
 
 .empty-hint {
-  font-size: 12px;
+  font-size: var(--sl-font-size-xs);
   color: var(--sl-text-tertiary);
   font-style: italic;
 }
@@ -455,29 +483,23 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateY(-8px);
 }
+</style>
 
-.panel-content::-webkit-scrollbar,
-.command-list::-webkit-scrollbar,
-.api-stats::-webkit-scrollbar {
-  width: 4px;
+<style>
+/* 非 scoped 样式，用于响应全局 data 属性 */
+[data-theme="dark"] .permission-panel {
+  --sl-glass-border: rgba(255, 255, 255, 0.08);
 }
 
-.panel-content::-webkit-scrollbar-track,
-.command-list::-webkit-scrollbar-track,
-.api-stats::-webkit-scrollbar-track {
-  background: transparent;
+[data-acrylic="true"] .permission-panel {
+  backdrop-filter: blur(var(--sl-blur-xl, 32px)) saturate(var(--sl-saturate-normal, 180%));
+  -webkit-backdrop-filter: blur(var(--sl-blur-xl, 32px)) saturate(var(--sl-saturate-normal, 180%));
 }
 
-.panel-content::-webkit-scrollbar-thumb,
-.command-list::-webkit-scrollbar-thumb,
-.api-stats::-webkit-scrollbar-thumb {
-  background: var(--sl-border);
-  border-radius: 2px;
-}
-
-.panel-content::-webkit-scrollbar-thumb:hover,
-.command-list::-webkit-scrollbar-thumb:hover,
-.api-stats::-webkit-scrollbar-thumb:hover {
-  background: var(--sl-text-tertiary);
+[data-acrylic="false"] .permission-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  will-change: auto;
+  background: var(--sl-surface);
 }
 </style>
