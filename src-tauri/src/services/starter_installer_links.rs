@@ -79,6 +79,19 @@ fn load_or_refresh_starter_links_json(links_file_path: &Path) -> Result<Vec<u8>,
             .map_err(|e| format!("读取本地 Starter 下载信息失败: {}", e));
     }
 
+    match fetch_and_cache_starter_links_json(links_file_path) {
+        Ok(body) => Ok(body),
+        Err(refresh_error) => {
+            if links_file_path.is_file() {
+                return std::fs::read(links_file_path)
+                    .map_err(|e| format!("读取本地 Starter 下载信息失败: {}", e));
+            }
+            Err(refresh_error)
+        }
+    }
+}
+
+fn fetch_and_cache_starter_links_json(links_file_path: &Path) -> Result<Vec<u8>, String> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(15))
         .build()
@@ -211,7 +224,7 @@ fn choose_more_specific_bucket<'a>(
         None => true,
         Some((selected_version, selected_files)) => {
             files.len() > selected_files.len()
-                || (files.len() == selected_files.len() && version < *selected_version)
+                || (files.len() == selected_files.len() && version > *selected_version)
         }
     };
 
