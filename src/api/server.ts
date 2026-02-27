@@ -239,8 +239,8 @@ export const serverApi = {
     return tauriInvoke("delete_server", { id });
   },
 
-  async getLogs(id: string, since: number): Promise<string[]> {
-    return tauriInvoke("get_server_logs", { id, since });
+  async getLogs(id: string, since: number, maxLines?: number): Promise<string[]> {
+    return tauriInvoke("get_server_logs", { id, since, maxLines });
   },
 
   onLogLine(callback: (payload: ServerLogLineEvent) => void): Promise<UnlistenFn> {

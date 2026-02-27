@@ -111,7 +111,7 @@ watch(
 async function syncLogsOnce(sid: string) {
   consoleOutputRef.value?.clear();
   try {
-    const lines = await serverApi.getLogs(sid, 0);
+    const lines = await serverApi.getLogs(sid, 0, Math.max(1, maxLogLines.value));
     consoleOutputRef.value?.appendLines(lines);
   } catch (_e) {}
 }
