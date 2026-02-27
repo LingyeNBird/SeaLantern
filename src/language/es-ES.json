@@ -447,6 +447,7 @@
     "font_size_desc": "Ajusta el tamaño del texto",
     "font_family": "Fuente",
     "font_family_desc": "Selecciona la fuente. Algunas requieren instalación previa",
+    "console_font_family_desc": "Selecciona la fuente usada por la consola. Algunas requieren instalación previa",
     "acrylic": "Efecto acrílico",
     "acrylic_desc": "Activar efecto de desenfoque gaussiano suave, compatible con todas las plataformas e imágenes de fondo",
     "background": "Imagen de fondo",

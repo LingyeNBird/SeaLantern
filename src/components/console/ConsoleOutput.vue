@@ -9,6 +9,7 @@ import { i18n } from "@language";
 
 interface Props {
   consoleFontSize: number;
+  consoleFontFamily: string;
   userScrolledUp: boolean;
   maxLogLines: number;
 }
@@ -72,6 +73,12 @@ function keepDisplayOnlyFocus() {
 function cssVar(name: string, fallback: string): string {
   const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   return value || fallback;
+}
+
+function getConsoleFontFamily(fontFamily: string): string {
+  return fontFamily && fontFamily.trim().length > 0
+    ? fontFamily
+    : cssVar("--sl-font-mono", "monospace");
 }
 
 function getLevelColor(level: string): string {
@@ -183,7 +190,7 @@ onMounted(() => {
     disableStdin: true,
     cursorBlink: false,
     cursorInactiveStyle: "none",
-    fontFamily: cssVar("--sl-font-mono", "monospace"),
+    fontFamily: getConsoleFontFamily(props.consoleFontFamily),
     fontSize: props.consoleFontSize,
     lineHeight: 1,
     scrollback: Math.max(100, props.maxLogLines),
@@ -249,6 +256,15 @@ watch(
   (size) => {
     if (!terminal) return;
     terminal.options.fontSize = size;
+    fitTerminal();
+  },
+);
+
+watch(
+  () => props.consoleFontFamily,
+  (family) => {
+    if (!terminal) return;
+    terminal.options.fontFamily = getConsoleFontFamily(family);
     fitTerminal();
   },
 );

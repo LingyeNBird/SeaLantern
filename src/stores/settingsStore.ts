@@ -51,6 +51,7 @@ const defaultSettings: AppSettings = {
   default_java_path: "",
   default_jvm_args: "",
   console_font_size: 12,
+  console_font_family: "",
   max_log_lines: 1000,
   cached_java_list: [],
   background_image: "",

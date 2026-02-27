@@ -37,6 +37,9 @@ pub struct AppSettings {
     #[serde(default = "default_console_font")]
     pub console_font_size: u32,
 
+    #[serde(default = "default_console_font_family")]
+    pub console_font_family: String,
+
     #[serde(default = "default_log_lines")]
     pub max_log_lines: u32,
 
@@ -129,6 +132,9 @@ fn default_port() -> u16 {
 fn default_console_font() -> u32 {
     13
 }
+fn default_console_font_family() -> String {
+    String::new()
+}
 fn default_log_lines() -> u32 {
     5000
 }
@@ -195,6 +201,7 @@ impl AppSettings {
         }
 
         if self.console_font_size != other.console_font_size
+            || self.console_font_family != other.console_font_family
             || self.max_log_lines != other.max_log_lines
         {
             changed.push(SettingsGroup::Console);
@@ -255,6 +262,9 @@ impl AppSettings {
         }
         if let Some(v) = partial.console_font_size {
             self.console_font_size = v;
+        }
+        if let Some(ref v) = partial.console_font_family {
+            self.console_font_family = v.clone();
         }
         if let Some(v) = partial.max_log_lines {
             self.max_log_lines = v;
@@ -344,6 +354,8 @@ pub struct PartialSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub console_font_size: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub console_font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_log_lines: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cached_java_list: Option<Vec<JavaInfo>>,
@@ -400,6 +412,7 @@ impl Default for AppSettings {
             default_java_path: String::new(),
             default_jvm_args: String::new(),
             console_font_size: 13,
+            console_font_family: String::new(),
             max_log_lines: 5000,
             cached_java_list: Vec::new(),
             background_image: String::new(),

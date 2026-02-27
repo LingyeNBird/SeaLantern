@@ -26,6 +26,7 @@ const userScrolledUp = ref(false);
 const commandHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const consoleFontSize = ref(13);
+const consoleFontFamily = ref("");
 const maxLogLines = ref(5000);
 const { loading: startLoading, start: startStartLoading, stop: stopStartLoading } = useLoading();
 const { loading: stopLoading, start: startStopLoading, stop: stopStopLoading } = useLoading();
@@ -67,6 +68,7 @@ onMounted(async () => {
   try {
     const settings = await settingsApi.get();
     consoleFontSize.value = settings.console_font_size;
+    consoleFontFamily.value = settings.console_font_family || "";
     maxLogLines.value = Math.max(100, settings.max_log_lines || 5000);
   } catch (e) {
     console.error("Failed to load settings:", e);
@@ -317,6 +319,7 @@ function deleteCommand(_cmd: import("@type/server").ServerCommand) {
       <ConsoleOutput
         ref="consoleOutputRef"
         :consoleFontSize="consoleFontSize"
+        :consoleFontFamily="consoleFontFamily"
         :maxLogLines="maxLogLines"
         :userScrolledUp="userScrolledUp"
         @scroll="(value) => (userScrolledUp = value)"
