@@ -140,6 +140,9 @@ fn fetch_and_cache_starter_links_json(links_file_path: &Path) -> Result<Vec<u8>,
         .map_err(|e| format!("读取 Starter 下载信息失败: {}", e))?
         .to_vec();
 
+    validate_starter_links_json(&body)
+        .map_err(|e| format!("远端 Starter 下载信息校验失败: {}", e))?;
+
     std::fs::write(links_file_path, &body)
         .map_err(|e| format!("写入 Starter 下载信息失败: {}", e))?;
 
