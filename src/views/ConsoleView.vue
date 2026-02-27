@@ -30,7 +30,6 @@ const consoleFontFamily = ref("");
 const maxLogLines = ref(5000);
 const { loading: startLoading, start: startStartLoading, stop: stopStartLoading } = useLoading();
 const { loading: stopLoading, start: startStopLoading, stop: stopStopLoading } = useLoading();
-let pollTimer: ReturnType<typeof setInterval> | null = null;
 let unlistenLogLine: UnlistenFn | null = null;
 
 const showCommandModal = ref(false);
@@ -88,12 +87,10 @@ onMounted(async () => {
     if (!sid || server_id !== sid) return;
     consoleOutputRef.value?.appendLines([line]);
   });
-  startPolling();
   nextTick(() => doScroll());
 });
 
 onUnmounted(() => {
-  stopPolling();
   if (unlistenLogLine) {
     unlistenLogLine();
     unlistenLogLine = null;
@@ -117,24 +114,6 @@ async function syncLogsOnce(sid: string) {
     const lines = await serverApi.getLogs(sid, 0);
     consoleOutputRef.value?.appendLines(lines);
   } catch (_e) {}
-}
-
-function startPolling() {
-  stopPolling();
-  pollTimer = setInterval(async () => {
-    try {
-      const sid = serverId.value;
-      if (!sid) return;
-      await serverStore.refreshStatus(sid);
-    } catch (_e) {}
-  }, 1200);
-}
-
-function stopPolling() {
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
 }
 
 async function sendCommand(cmd?: string) {
