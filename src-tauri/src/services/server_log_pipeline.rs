@@ -117,10 +117,10 @@ pub fn read_logs(
     if let Some(limit) = recent_limit.filter(|v| *v > 0) {
         let mut stmt = conn
             .prepare(
-                "SELECT line FROM (\
-                   SELECT rowid, line FROM log_lines ORDER BY rowid DESC LIMIT ?1\
-                 ) recent\
-                 ORDER BY rowid ASC LIMIT -1 OFFSET ?2",
+                r#"SELECT line FROM (
+                       SELECT rowid, line FROM log_lines ORDER BY rowid DESC LIMIT ?1
+                   ) recent
+                   ORDER BY rowid ASC LIMIT -1 OFFSET ?2"#,
             )
             .map_err(|e| format!("准备日志读取失败: {}", e))?;
         let rows = stmt
@@ -209,12 +209,12 @@ fn init_sqlite_log_db(db_path: &Path) -> Result<Connection, String> {
         .map_err(|e| e.to_string())?;
 
     conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS log_lines (\
-             id INTEGER PRIMARY KEY AUTOINCREMENT,\
-             timestamp INTEGER NOT NULL,\
-             source TEXT NOT NULL CHECK(source IN ('sealantern','server')),\
-             line TEXT NOT NULL\
-         );",
+        r#"CREATE TABLE IF NOT EXISTS log_lines (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             timestamp INTEGER NOT NULL,
+             source TEXT NOT NULL CHECK(source IN ('sealantern','server')),
+             line TEXT NOT NULL
+         );"#,
     )
     .map_err(|e| e.to_string())?;
 
@@ -222,13 +222,13 @@ fn init_sqlite_log_db(db_path: &Path) -> Result<Connection, String> {
     let has_source = table_has_column(&conn, "log_lines", "source")?;
     if !has_timestamp || !has_source {
         conn.execute_batch(
-            "DROP TABLE IF EXISTS log_lines;\
-             CREATE TABLE log_lines (\
-               id INTEGER PRIMARY KEY AUTOINCREMENT,\
-               timestamp INTEGER NOT NULL,\
-               source TEXT NOT NULL CHECK(source IN ('sealantern','server')),\
-               line TEXT NOT NULL\
-             );",
+            r#"DROP TABLE IF EXISTS log_lines;
+             CREATE TABLE log_lines (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               timestamp INTEGER NOT NULL,
+               source TEXT NOT NULL CHECK(source IN ('sealantern','server')),
+               line TEXT NOT NULL
+             );"#,
         )
         .map_err(|e| e.to_string())?;
     }
