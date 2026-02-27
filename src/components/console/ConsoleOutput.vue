@@ -169,7 +169,29 @@ function getAllPlainText(): string {
     excludeAltBuffer: true,
     excludeModes: true,
   });
-  return serialized.replace(/\x1B\[[0-9;?]*[ -/]*[@-~]/g, "").replace(/\r/g, "");
+  return stripAnsi(serialized).replaceAll("\r", "");
+}
+
+function stripAnsi(text: string): string {
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    if (text.charCodeAt(i) === 27 && text.charCodeAt(i + 1) === 91) {
+      i += 2;
+      while (i < text.length) {
+        const code = text.charCodeAt(i);
+        if (code >= 64 && code <= 126) {
+          i += 1;
+          break;
+        }
+        i += 1;
+      }
+      continue;
+    }
+    result += text[i];
+    i += 1;
+  }
+  return result;
 }
 
 function setupScrollTracking() {
