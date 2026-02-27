@@ -78,7 +78,6 @@ pub fn append_log(
     server_path: &Path,
     message: &str,
     source: LogSource,
-    max_lines: i64,
 ) -> Result<(), String> {
     let mut conn = open_or_create_log_db(server_path)?;
     let timestamp = SystemTime::now()
@@ -96,13 +95,6 @@ pub fn append_log(
     )
     .map_err(|e| format!("写入日志失败: {}", e))?;
 
-    tx.execute(
-        "DELETE FROM log_lines \
-         WHERE rowid NOT IN (SELECT rowid FROM log_lines ORDER BY rowid DESC LIMIT ?1)",
-        params![max_lines.max(1)],
-    )
-    .map_err(|e| format!("裁剪日志失败: {}", e))?;
-
     tx.commit()
         .map_err(|e| format!("提交日志写事务失败: {}", e))?;
     emit_server_log_line(server_id, message);
@@ -111,8 +103,7 @@ pub fn append_log(
 
 fn append_log_by_id(server_id: &str, message: &str, source: LogSource) -> Result<(), String> {
     let server_path = resolve_server_path(server_id)?;
-    let max_lines = super::global::settings_manager().get().max_log_lines.max(1) as i64;
-    append_log(server_id, &server_path, message, source, max_lines)
+    append_log(server_id, &server_path, message, source)
 }
 
 pub fn read_logs(server_path: &Path, since: u64) -> Result<Vec<String>, String> {
