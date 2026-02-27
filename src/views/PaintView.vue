@@ -36,6 +36,7 @@ const themeProxyPluginName = computed(() => themeProxyPlugin.value?.manifest.nam
 const fontSize = ref("14");
 const consoleFontSize = ref("13");
 const consoleFontFamily = ref("");
+const consoleLetterSpacing = ref("0");
 const maxLogLines = ref("5000");
 const bgOpacity = ref("0.3");
 const bgBlur = ref("0");
@@ -74,6 +75,7 @@ function syncLocalValues(s: AppSettings) {
   fontSize.value = String(s.font_size);
   consoleFontSize.value = String(s.console_font_size);
   consoleFontFamily.value = s.console_font_family || "";
+  consoleLetterSpacing.value = String(s.console_letter_spacing ?? 0);
   maxLogLines.value = String(s.max_log_lines);
   bgOpacity.value = String(s.background_opacity);
   bgBlur.value = String(s.background_blur);
@@ -104,6 +106,7 @@ async function loadSettings() {
     fontSize.value = String(s.font_size);
     consoleFontSize.value = String(s.console_font_size);
     consoleFontFamily.value = s.console_font_family || "";
+    consoleLetterSpacing.value = String(s.console_letter_spacing ?? 0);
     maxLogLines.value = String(s.max_log_lines);
     bgOpacity.value = String(s.background_opacity);
     bgBlur.value = String(s.background_blur);
@@ -197,6 +200,7 @@ async function saveSettings() {
 
   settings.value.console_font_size = parseInt(consoleFontSize.value) || 13;
   settings.value.console_font_family = consoleFontFamily.value;
+  settings.value.console_letter_spacing = parseInt(consoleLetterSpacing.value) || 0;
   settings.value.max_log_lines = parseInt(maxLogLines.value) || 5000;
   settings.value.background_opacity = parseFloat(bgOpacity.value) || 0.3;
   settings.value.background_blur = parseInt(bgBlur.value) || 0;
@@ -234,6 +238,7 @@ async function resetSettings() {
     fontSize.value = String(s.font_size);
     consoleFontSize.value = String(s.console_font_size);
     consoleFontFamily.value = s.console_font_family || "";
+    consoleLetterSpacing.value = String(s.console_letter_spacing ?? 0);
     maxLogLines.value = String(s.max_log_lines);
     bgOpacity.value = String(s.background_opacity);
     bgBlur.value = String(s.background_blur);
@@ -268,6 +273,7 @@ async function handleImport(json: string) {
     fontSize.value = String(s.font_size);
     consoleFontSize.value = String(s.console_font_size);
     consoleFontFamily.value = s.console_font_family || "";
+    consoleLetterSpacing.value = String(s.console_letter_spacing ?? 0);
     maxLogLines.value = String(s.max_log_lines);
     bgOpacity.value = String(s.background_opacity);
     bgBlur.value = String(s.background_blur);
@@ -360,6 +366,7 @@ function clearBackgroundImage() {
       <ConsoleSettingsCard
         v-model:consoleFontSize="consoleFontSize"
         v-model:consoleFontFamily="consoleFontFamily"
+        v-model:consoleLetterSpacing="consoleLetterSpacing"
         v-model:maxLogLines="maxLogLines"
         :fontFamilyOptions="fontFamilyOptions"
         :fontsLoading="fontsLoading"

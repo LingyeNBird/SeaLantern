@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from "vue";
+import { ref, onMounted, onUnmounted, onActivated, nextTick, computed, watch } from "vue";
 import SLButton from "@components/common/SLButton.vue";
 import ConsoleInput from "@components/console/ConsoleInput.vue";
 import CommandModal from "@components/console/CommandModal.vue";
@@ -9,6 +9,7 @@ import { serverApi } from "@api/server";
 import { settingsApi } from "@api/settings";
 import { i18n } from "@language";
 import { useLoading } from "@composables/useAsync";
+import { SETTINGS_UPDATE_EVENT, type SettingsUpdateEvent } from "@stores/settingsStore";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
 const serverStore = useServerStore();
@@ -27,6 +28,7 @@ const commandHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const consoleFontSize = ref(13);
 const consoleFontFamily = ref("");
+const consoleLetterSpacing = ref(0);
 const maxLogLines = ref(5000);
 const { loading: startLoading, start: startStartLoading, stop: stopStartLoading } = useLoading();
 const { loading: stopLoading, start: startStopLoading, stop: stopStopLoading } = useLoading();
@@ -64,14 +66,8 @@ const isStopping = computed(() => serverStatus.value === "Stopping");
 const isStarting = computed(() => serverStatus.value === "Starting");
 
 onMounted(async () => {
-  try {
-    const settings = await settingsApi.get();
-    consoleFontSize.value = settings.console_font_size;
-    consoleFontFamily.value = settings.console_font_family || "";
-    maxLogLines.value = Math.max(100, settings.max_log_lines || 5000);
-  } catch (e) {
-    console.error("Failed to load settings:", e);
-  }
+  await loadConsoleSettings();
+  window.addEventListener(SETTINGS_UPDATE_EVENT, handleSettingsUpdate as EventListener);
 
   await serverStore.refreshList();
   // 如果没有当前服务器但有服务器列表，选择第一个
@@ -91,10 +87,15 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener(SETTINGS_UPDATE_EVENT, handleSettingsUpdate as EventListener);
   if (unlistenLogLine) {
     unlistenLogLine();
     unlistenLogLine = null;
   }
+});
+
+onActivated(async () => {
+  await loadConsoleSettings();
 });
 
 watch(
@@ -114,6 +115,31 @@ async function syncLogsOnce(sid: string) {
     const lines = await serverApi.getLogs(sid, 0, Math.max(1, maxLogLines.value));
     consoleOutputRef.value?.appendLines(lines);
   } catch (_e) {}
+}
+
+async function loadConsoleSettings() {
+  try {
+    const settings = await settingsApi.get();
+    applyConsoleSettings(settings);
+  } catch (e) {
+    console.error("Failed to load settings:", e);
+  }
+}
+
+function applyConsoleSettings(settings: {
+  console_font_size: number;
+  console_font_family: string;
+  console_letter_spacing: number;
+  max_log_lines: number;
+}) {
+  consoleFontSize.value = settings.console_font_size;
+  consoleFontFamily.value = settings.console_font_family || "";
+  consoleLetterSpacing.value = settings.console_letter_spacing || 0;
+  maxLogLines.value = Math.max(100, settings.max_log_lines || 5000);
+}
+
+function handleSettingsUpdate(event: CustomEvent<SettingsUpdateEvent>) {
+  applyConsoleSettings(event.detail.settings);
 }
 
 async function sendCommand(cmd?: string) {
@@ -299,6 +325,7 @@ function deleteCommand(_cmd: import("@type/server").ServerCommand) {
         ref="consoleOutputRef"
         :consoleFontSize="consoleFontSize"
         :consoleFontFamily="consoleFontFamily"
+        :consoleLetterSpacing="consoleLetterSpacing"
         :maxLogLines="maxLogLines"
         :userScrolledUp="userScrolledUp"
         @scroll="(value) => (userScrolledUp = value)"

@@ -19,6 +19,7 @@ export interface AppSettings {
   default_jvm_args: string;
   console_font_size: number;
   console_font_family: string;
+  console_letter_spacing: number;
   max_log_lines: number;
   cached_java_list: JavaInfo[];
   background_image: string;
@@ -54,6 +55,7 @@ export interface PartialSettings {
   default_jvm_args?: string;
   console_font_size?: number;
   console_font_family?: string;
+  console_letter_spacing?: number;
   max_log_lines?: number;
   cached_java_list?: JavaInfo[];
   background_image?: string;

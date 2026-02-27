@@ -7,6 +7,7 @@ import { i18n } from "@language";
 defineProps<{
   consoleFontSize: string;
   consoleFontFamily: string;
+  consoleLetterSpacing: string;
   fontFamilyOptions: { label: string; value: string }[];
   fontsLoading: boolean;
   maxLogLines: string;
@@ -15,6 +16,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: "update:consoleFontSize", value: string): void;
   (e: "update:consoleFontFamily", value: string): void;
+  (e: "update:consoleLetterSpacing", value: string): void;
   (e: "update:maxLogLines", value: string): void;
   (e: "change"): void;
 }>();
@@ -58,6 +60,25 @@ const emit = defineEmits<{
             @update:model-value="
               (v) => {
                 emit('update:consoleFontFamily', v);
+                emit('change');
+              }
+            "
+          />
+        </div>
+      </div>
+
+      <div class="sl-setting-row">
+        <div class="sl-setting-info">
+          <span class="sl-setting-label">{{ i18n.t("settings.console_letter_spacing") }}</span>
+          <span class="sl-setting-desc">{{ i18n.t("settings.console_letter_spacing_desc") }}</span>
+        </div>
+        <div class="sl-input-sm">
+          <SLInput
+            :model-value="consoleLetterSpacing"
+            type="number"
+            @update:model-value="
+              (v) => {
+                emit('update:consoleLetterSpacing', v);
                 emit('change');
               }
             "

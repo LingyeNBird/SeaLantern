@@ -6,10 +6,10 @@
 //!
 //! 1) 写入链路（高频、强调吞吐）
 //!    append_sealantern_log / append_server_log
-//!      -> append_log_by_id
-//!      -> append_log
-//!      -> 每个 server_id 对应一个常驻 Writer 线程（run_log_writer）
-//!      -> 按批次短事务写入 SQLite（flush_batch）
+//!    - append_log_by_id
+//!    - append_log
+//!    - 每个 server_id 对应一个常驻 Writer 线程（run_log_writer）
+//!    - 按批次短事务写入 SQLite（flush_batch）
 //!
 //!    这样做的原因：
 //!    - 旧实现是“每行日志都 open + pragma + 事务 + commit”，高并发输出下会放大 I/O 和锁竞争。
@@ -18,8 +18,8 @@
 //!
 //! 2) 读取链路（按需、强调稳定）
 //!    get_logs / get_all_logs
-//!      -> read_logs
-//!      -> 独立连接读取 SQLite
+//!    - read_logs
+//!    - 独立连接读取 SQLite
 //!
 //!    写读解耦的意义：
 //!    - 写入是否突发，不会直接阻塞“读取函数的调用结构”。

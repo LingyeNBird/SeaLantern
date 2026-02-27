@@ -10,11 +10,13 @@ import { i18n } from "@language";
 interface Props {
   consoleFontSize: number;
   consoleFontFamily: string;
+  consoleLetterSpacing?: number;
   userScrolledUp: boolean;
-  maxLogLines: number;
+  maxLogLines?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  consoleLetterSpacing: 0,
   maxLogLines: 5000,
 });
 
@@ -221,6 +223,7 @@ onMounted(() => {
     cursorInactiveStyle: "none",
     fontFamily: getConsoleFontFamily(props.consoleFontFamily),
     fontSize: props.consoleFontSize,
+    letterSpacing: props.consoleLetterSpacing,
     lineHeight: 1,
     scrollback: Math.max(100, props.maxLogLines),
     theme: {
@@ -294,6 +297,19 @@ watch(
   (family) => {
     if (!terminal) return;
     terminal.options.fontFamily = getConsoleFontFamily(family);
+    terminal.clearTextureAtlas();
+    terminal.refresh(0, terminal.rows - 1);
+    fitTerminal();
+  },
+);
+
+watch(
+  () => props.consoleLetterSpacing,
+  (value) => {
+    if (!terminal) return;
+    terminal.options.letterSpacing = value;
+    terminal.clearTextureAtlas();
+    terminal.refresh(0, terminal.rows - 1);
     fitTerminal();
   },
 );

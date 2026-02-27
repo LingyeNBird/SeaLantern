@@ -40,6 +40,9 @@ pub struct AppSettings {
     #[serde(default = "default_console_font_family")]
     pub console_font_family: String,
 
+    #[serde(default = "default_console_letter_spacing")]
+    pub console_letter_spacing: i32,
+
     #[serde(default = "default_log_lines")]
     pub max_log_lines: u32,
 
@@ -135,6 +138,9 @@ fn default_console_font() -> u32 {
 fn default_console_font_family() -> String {
     String::new()
 }
+fn default_console_letter_spacing() -> i32 {
+    0
+}
 fn default_log_lines() -> u32 {
     5000
 }
@@ -202,6 +208,7 @@ impl AppSettings {
 
         if self.console_font_size != other.console_font_size
             || self.console_font_family != other.console_font_family
+            || self.console_letter_spacing != other.console_letter_spacing
             || self.max_log_lines != other.max_log_lines
         {
             changed.push(SettingsGroup::Console);
@@ -265,6 +272,9 @@ impl AppSettings {
         }
         if let Some(ref v) = partial.console_font_family {
             self.console_font_family = v.clone();
+        }
+        if let Some(v) = partial.console_letter_spacing {
+            self.console_letter_spacing = v;
         }
         if let Some(v) = partial.max_log_lines {
             self.max_log_lines = v;
@@ -356,6 +366,8 @@ pub struct PartialSettings {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub console_font_family: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub console_letter_spacing: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_log_lines: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cached_java_list: Option<Vec<JavaInfo>>,
@@ -413,6 +425,7 @@ impl Default for AppSettings {
             default_jvm_args: String::new(),
             console_font_size: 13,
             console_font_family: String::new(),
+            console_letter_spacing: 0,
             max_log_lines: 5000,
             cached_java_list: Vec::new(),
             background_image: String::new(),
