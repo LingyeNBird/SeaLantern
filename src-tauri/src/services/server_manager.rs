@@ -679,10 +679,12 @@ impl ServerManager {
                 match child.try_wait() {
                     Ok(Some(_)) => {
                         procs.remove(id);
+                        server_log_pipeline::shutdown_writer(id);
                     } // Dead process, clean up
                     Ok(None) => return Err("服务器已在运行中".to_string()),
                     Err(_) => {
                         procs.remove(id);
+                        server_log_pipeline::shutdown_writer(id);
                     }
                 }
             }
@@ -1083,6 +1085,12 @@ impl ServerManager {
     }
 
     pub fn stop_server(&self, id: &str) -> Result<(), String> {
+        // 日志 Writer 生命周期说明：
+        // 1) 停服流程中“最后一条 Sea Lantern 提示日志”要先入队，随后再 shutdown_writer。
+        //    这样可以保证提示日志也被刷盘，不会因为先关 Writer 而丢失。
+        // 2) shutdown_writer 会触发 writer 线程 flush+join，确保 SQLite 句柄被释放。
+        //    这对 Windows 很关键，可避免删除目录或外部工具读取 DB 时遇到句柄占用。
+        // 3) 所有 return 分支都要覆盖 shutdown_writer，避免异常路径漏清理。
         // Check if actually running first
         let is_running = {
             let mut procs = self.processes.lock().expect("processes lock poisoned");
@@ -1090,11 +1098,13 @@ impl ServerManager {
                 match child.try_wait() {
                     Ok(Some(_)) => {
                         procs.remove(id);
+                        server_log_pipeline::shutdown_writer(id);
                         false
                     }
                     Ok(None) => true,
                     Err(_) => {
                         procs.remove(id);
+                        server_log_pipeline::shutdown_writer(id);
                         false
                     }
                 }
@@ -1106,6 +1116,7 @@ impl ServerManager {
         if !is_running {
             self.clear_stopping(id);
             let _ = server_log_pipeline::append_sealantern_log(id, "[Sea Lantern] 服务器未运行");
+            server_log_pipeline::shutdown_writer(id);
             return Ok(());
         }
 
@@ -1124,12 +1135,14 @@ impl ServerManager {
                             id,
                             "[Sea Lantern] 服务器已正常停止",
                         );
+                        server_log_pipeline::shutdown_writer(id);
                         return Ok(());
                     }
                     Ok(None) => {} // Still running
                     Err(_) => {
                         procs.remove(id);
                         self.clear_stopping(id);
+                        server_log_pipeline::shutdown_writer(id);
                         return Ok(());
                     }
                 }
@@ -1137,6 +1150,7 @@ impl ServerManager {
                 self.clear_stopping(id);
                 let _ =
                     server_log_pipeline::append_sealantern_log(id, "[Sea Lantern] 服务器已停止");
+                server_log_pipeline::shutdown_writer(id);
                 return Ok(());
             }
         }
@@ -1150,6 +1164,7 @@ impl ServerManager {
                 "[Sea Lantern] 服务器超时，已强制终止",
             );
         }
+        server_log_pipeline::shutdown_writer(id);
         self.clear_stopping(id);
         Ok(())
     }
@@ -1176,12 +1191,14 @@ impl ServerManager {
             match child.try_wait() {
                 Ok(Some(_)) => {
                     procs.remove(id);
+                    server_log_pipeline::shutdown_writer(id);
                     self.clear_starting(id);
                     false
                 }
                 Ok(None) => true,
                 Err(_) => {
                     procs.remove(id);
+                    server_log_pipeline::shutdown_writer(id);
                     self.clear_starting(id);
                     false
                 }
@@ -1213,6 +1230,8 @@ impl ServerManager {
                 let _ = self.stop_server(id);
             }
         }
+
+        server_log_pipeline::shutdown_writer(id);
 
         let server_path = {
             let servers = self.servers.lock().expect("servers lock poisoned");
